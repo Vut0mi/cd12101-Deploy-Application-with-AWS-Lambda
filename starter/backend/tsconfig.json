@@ -2,11 +2,20 @@
   "compilerOptions": {
     "target": "ES2020",
     "module": "commonjs",
-    "outDir": "dist",
+    "lib": ["ES2020"],
     "strict": true,
     "esModuleInterop": true,
-    "resolveJsonModule": true
+    "skipLibCheck": true,
+    "rootDir": "./src",
+    "outDir": ".build",
+    "baseUrl": "./src",
+    "paths": {
+      "@businessLogic/*": ["businessLogic/*"],
+      "@dataLayer/*": ["dataLayer/*"],
+      "@utils/*": ["utils/*"]
+    },
+    "sourceMap": true
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules"]
 }
-

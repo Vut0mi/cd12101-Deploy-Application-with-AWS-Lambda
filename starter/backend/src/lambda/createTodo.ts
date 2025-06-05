@@ -2,7 +2,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import middy from "@middy/core";
 import httpCors from "@middy/http-cors";
 
-import { createTodo } from "../../businessLogic/todos";
+import { createTodo } from "../businessLogic/todos";
 import { getUserId } from "../utils";
 
 const baseHandler = async (
