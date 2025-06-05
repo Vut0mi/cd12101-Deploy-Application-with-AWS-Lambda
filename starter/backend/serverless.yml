@@ -37,18 +37,18 @@ functions:
     handler: src/auth/auth0Authorizer.handler
 
   GetTodos:
-    handler: src/lambda/http/getTodos.handler
+    handler: src/lambda/getTodos.handler
     events:
       - http:
           method: get
           path: todos
-          authorizer: 
+          authorizer:
             name: Auth
             resultTtlInSeconds: 300
           cors: true
 
   CreateTodo:
-    handler: src/lambda/http/createTodo.handler
+    handler: src/lambda/createTodo.handler
     events:
       - http:
           method: post
@@ -57,7 +57,7 @@ functions:
           cors: true
 
   UpdateTodo:
-    handler: src/lambda/http/updateTodo.handler
+    handler: src/lambda/updateTodo.handler
     events:
       - http:
           method: patch
@@ -66,7 +66,7 @@ functions:
           cors: true
 
   DeleteTodo:
-    handler: src/lambda/http/deleteTodo.handler
+    handler: src/lambda/deleteTodo.handler
     events:
       - http:
           method: delete
@@ -75,7 +75,7 @@ functions:
           cors: true
 
   GenerateUploadUrl:
-    handler: src/lambda/http/generateUploadUrl.handler
+    handler: src/lambda/generateUploadUrl.handler
     environment:
       BUCKET_NAME: ${self:provider.environment.ATTACHMENT_S3_BUCKET}
       URL_EXPIRATION: ${self:provider.environment.SIGNED_URL_EXPIRATION}
@@ -86,44 +86,8 @@ functions:
           authorizer: Auth
           cors: true
 
-resources:
-  Resources:
-    TodosTable:
-      Type: AWS::DynamoDB::Table
-      Properties:
-        TableName: TodosTable-${self:provider.stage}
-        AttributeDefinitions:
-          - AttributeName: userId
-            AttributeType: S
-          - AttributeName: todoId
-            AttributeType: S
-        KeySchema:
-          - AttributeName: userId
-            KeyType: HASH
-          - AttributeName: todoId
-            KeyType: RANGE
-        BillingMode: PAY_PER_REQUEST
-        StreamSpecification:
-          StreamViewType: NEW_IMAGE
-
-    AttachmentsBucket:
-      Type: AWS::S3::Bucket
-      Properties:
-        BucketName: todo-attachments-${self:custom.accountId}-${self:provider.stage}
-        AccessControl: Private
-        PublicAccessBlockConfiguration:
-          BlockPublicAcls: true
-          BlockPublicPolicy: true
-          IgnorePublicAcls: true
-          RestrictPublicBuckets: true
-        LifecycleConfiguration:
-          Rules:
-            - Status: Enabled
-              ExpirationInDays: 30
-
 plugins:
   - serverless-plugin-existing-s3
-  - serverless-esbuild  # <-- Add this plugin
 
 custom:
   accountId: ${aws:accountId}
@@ -133,12 +97,12 @@ custom:
         allowBucketPolicy: true
         force: true
 
+build:
   esbuild:
     bundle: true
     minify: false
     sourcemap: true
     target: node18
     platform: node
-    concurrency: 10
     external:
-      - aws-sdk  # aws-sdk is available in Lambda environment by default
+      - aws-sdk
