@@ -3,16 +3,22 @@ import dateFormat from 'dateformat'
 import React, { useState } from 'react'
 import { Divider, Grid, Input } from 'semantic-ui-react'
 import { createTodo } from '../api/todos-api'
+import { authConfig } from '../config'
 
 export function NewTodoInput({ onNewTodo }) {
   const [newTodoName, setNewTodoName] = useState('')
-
   const { getAccessTokenSilently } = useAuth0()
 
   const onTodoCreate = async (event) => {
+    event.preventDefault()
+    if (!newTodoName.trim()) {
+      alert('Please enter a task name')
+      return
+    }
+
     try {
       const accessToken = await getAccessTokenSilently({
-        audience: `https://test-endpoint.auth0.com/api/v2/`,
+        audience: authConfig.audience,
         scope: 'write:todos'
       })
       const dueDate = calculateDueDate()
@@ -21,8 +27,9 @@ export function NewTodoInput({ onNewTodo }) {
         dueDate
       })
       onNewTodo(createdTodo)
+      setNewTodoName('') // Clear input after creation
     } catch (e) {
-      console.log('Failed to created a new TODO', e)
+      console.error('Failed to create a new TODO', e)
       alert('Todo creation failed')
     }
   }
@@ -41,6 +48,7 @@ export function NewTodoInput({ onNewTodo }) {
           fluid
           actionPosition="left"
           placeholder="To change the world..."
+          value={newTodoName}
           onChange={(event) => setNewTodoName(event.target.value)}
         />
       </Grid.Column>
@@ -54,6 +62,6 @@ export function NewTodoInput({ onNewTodo }) {
 function calculateDueDate() {
   const date = new Date()
   date.setDate(date.getDate() + 7)
-
   return dateFormat(date, 'yyyy-mm-dd')
 }
+

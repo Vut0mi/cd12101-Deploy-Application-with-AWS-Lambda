@@ -1,59 +1,144 @@
 service: serverless-todo-app
 
-plugins:
-  - serverless-iam-roles-per-function
-
-frameworkVersion: '3'
+frameworkVersion: '4'
 
 provider:
   name: aws
-  runtime: nodejs14.x
+  runtime: nodejs18.x
+  region: us-east-1
+  stage: dev
+  logs:
+    restApi: true
+    httpApi: true
+  environment:
+    TODOS_TABLE: TodosTable-${self:provider.stage}
+    ATTACHMENT_S3_BUCKET: todo-attachments-${self:custom.accountId}-${self:provider.stage}
+    SIGNED_URL_EXPIRATION: 300
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:Query
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+          Resource:
+            - arn:aws:dynamodb:${aws:region}:*:table/TodosTable-${self:provider.stage}
+        - Effect: Allow
+          Action:
+            - s3:PutObject
+            - s3:GetObject
+          Resource:
+            - arn:aws:s3:::todo-attachments-${AWS::AccountId}-${self:provider.stage}/*
 
 functions:
-
   Auth:
-    handler: src/lambda/auth/auth0Authorizer.handler
+    handler: src/auth/auth0Authorizer.handler
 
-  # TODO: Configure this function
   GetTodos:
     handler: src/lambda/http/getTodos.handler
     events:
       - http:
           method: get
           path: todos
+          authorizer: 
+            name: Auth
+            resultTtlInSeconds: 300
+          cors: true
 
-  # TODO: Configure this function
   CreateTodo:
     handler: src/lambda/http/createTodo.handler
     events:
       - http:
           method: post
           path: todos
+          authorizer: Auth
+          cors: true
 
-  # TODO: Configure this function
   UpdateTodo:
     handler: src/lambda/http/updateTodo.handler
     events:
       - http:
           method: patch
           path: todos/{todoId}
+          authorizer: Auth
+          cors: true
 
-  # TODO: Configure this function
   DeleteTodo:
     handler: src/lambda/http/deleteTodo.handler
     events:
       - http:
           method: delete
           path: todos/{todoId}
+          authorizer: Auth
+          cors: true
 
-  # TODO: Configure this function
   GenerateUploadUrl:
     handler: src/lambda/http/generateUploadUrl.handler
+    environment:
+      BUCKET_NAME: ${self:provider.environment.ATTACHMENT_S3_BUCKET}
+      URL_EXPIRATION: ${self:provider.environment.SIGNED_URL_EXPIRATION}
     events:
       - http:
           method: post
           path: todos/{todoId}/attachment
+          authorizer: Auth
+          cors: true
 
 resources:
   Resources:
-    # TODO: Add any necessary AWS resources
+    TodosTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: TodosTable-${self:provider.stage}
+        AttributeDefinitions:
+          - AttributeName: userId
+            AttributeType: S
+          - AttributeName: todoId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: userId
+            KeyType: HASH
+          - AttributeName: todoId
+            KeyType: RANGE
+        BillingMode: PAY_PER_REQUEST
+        StreamSpecification:
+          StreamViewType: NEW_IMAGE
+
+    AttachmentsBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: todo-attachments-${self:custom.accountId}-${self:provider.stage}
+        AccessControl: Private
+        PublicAccessBlockConfiguration:
+          BlockPublicAcls: true
+          BlockPublicPolicy: true
+          IgnorePublicAcls: true
+          RestrictPublicBuckets: true
+        LifecycleConfiguration:
+          Rules:
+            - Status: Enabled
+              ExpirationInDays: 30
+
+plugins:
+  - serverless-plugin-existing-s3
+  - serverless-esbuild  # <-- Add this plugin
+
+custom:
+  accountId: ${aws:accountId}
+  existingS3:
+    buckets:
+      - name: todo-attachments-${self:custom.accountId}-${self:provider.stage}
+        allowBucketPolicy: true
+        force: true
+
+  esbuild:
+    bundle: true
+    minify: false
+    sourcemap: true
+    target: node18
+    platform: node
+    concurrency: 10
+    external:
+      - aws-sdk  # aws-sdk is available in Lambda environment by default

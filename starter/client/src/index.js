@@ -7,15 +7,19 @@ import './index.css'
 
 const domain = process.env.REACT_APP_AUTH0_DOMAIN
 const clientId = process.env.REACT_APP_AUTH0_CLIENT_ID
+const audience = "https://todo-api.dev" // <-- Replace with your Auth0 API Identifier
+
 ReactDOM.render(
   <Auth0Provider
     domain={domain}
     clientId={clientId}
     redirectUri={window.location.origin}
-    audience={`https://${domain}/api/v2/`}
-    scope="read:todo write:todo delete:todo"
+    audience={audience}
+    scope="openid profile email read:todo write:todo delete:todo"
+    cacheLocation="localstorage"
   >
     <App />
   </Auth0Provider>,
   document.getElementById('root')
 )
+

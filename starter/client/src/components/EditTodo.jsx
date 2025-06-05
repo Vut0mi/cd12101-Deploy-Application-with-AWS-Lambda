@@ -3,6 +3,7 @@ import React, { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Button, Form } from 'semantic-ui-react'
 import { getUploadUrl, uploadFile } from '../api/todos-api'
+import { authConfig } from '../config'
 
 const UploadState = {
   NoUpload: 'NoUpload',
@@ -11,6 +12,11 @@ const UploadState = {
 }
 
 export function EditTodo() {
+  const [file, setFile] = useState(undefined)
+  const [uploadState, setUploadState] = useState(UploadState.NoUpload)
+  const { getAccessTokenSilently } = useAuth0()
+  const { todoId } = useParams()
+
   function renderButton() {
     return (
       <div>
@@ -28,12 +34,16 @@ export function EditTodo() {
   function handleFileChange(event) {
     const files = event.target.files
     if (!files) return
-
     setFile(files[0])
   }
 
   async function handleSubmit(event) {
     event.preventDefault()
+
+    if (!todoId) {
+      alert('Missing todo ID')
+      return
+    }
 
     try {
       if (!file) {
@@ -43,7 +53,7 @@ export function EditTodo() {
 
       setUploadState(UploadState.FetchingPresignedUrl)
       const accessToken = await getAccessTokenSilently({
-        audience: `https://test-endpoint.auth0.com/api/v2/`,
+        audience: authConfig.audience,
         scope: 'write:todos'
       })
       const uploadUrl = await getUploadUrl(accessToken, todoId)
@@ -58,11 +68,6 @@ export function EditTodo() {
       setUploadState(UploadState.NoUpload)
     }
   }
-
-  const [file, setFile] = useState(undefined)
-  const [uploadState, setUploadState] = useState(UploadState.NoUpload)
-  const { getAccessTokenSilently } = useAuth0()
-  const { todoId } = useParams()
 
   return (
     <div>
@@ -84,3 +89,4 @@ export function EditTodo() {
     </div>
   )
 }
+
