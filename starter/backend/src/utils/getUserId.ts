@@ -1,6 +1,6 @@
 import { APIGatewayProxyEvent } from 'aws-lambda'
+import { decodeJwt } from 'jose'
 import { JwtPayload } from './jwt'
-import jwt from 'jsonwebtoken'
 
 /**
  * Get a user ID from a JWT token in an API Gateway event
@@ -15,7 +15,7 @@ export function getUserId(event: APIGatewayProxyEvent): string {
   }
 
   const token = getToken(authHeader)
-  const decodedToken = jwt.decode(token) as JwtPayload
+  const decodedToken = decodeJwt(token) as JwtPayload
 
   if (!decodedToken || typeof decodedToken === 'string' || !decodedToken.sub) {
     throw new Error('Invalid token')
