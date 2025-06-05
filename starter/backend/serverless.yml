@@ -11,7 +11,7 @@ provider:
     restApi: true
     httpApi: true
   environment:
-    TODOS_TABLE: TodosTable-${self:provider.stage}
+    TODOS_TABLE: Todos # ✅ Fixed to match your actual table name
     ATTACHMENT_S3_BUCKET: todo-attachments-${self:custom.accountId}-${self:provider.stage}
     SIGNED_URL_EXPIRATION: 300
   iam:
@@ -24,11 +24,12 @@ provider:
             - dynamodb:UpdateItem
             - dynamodb:DeleteItem
           Resource:
-            - arn:aws:dynamodb:${aws:region}:*:table/TodosTable-${self:provider.stage}
+            - arn:aws:dynamodb:${aws:region}:*:table/Todos # ✅ Updated to match real table
         - Effect: Allow
           Action:
             - s3:PutObject
             - s3:GetObject
+            - s3:PutObjectAcl
           Resource:
             - arn:aws:s3:::todo-attachments-${AWS::AccountId}-${self:provider.stage}/*
 
