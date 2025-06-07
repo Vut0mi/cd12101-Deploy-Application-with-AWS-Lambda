@@ -1,3 +1,4 @@
+// src/components/Todos.jsx
 import update from 'immutability-helper'
 import React, { useEffect, useState } from 'react'
 import {
@@ -30,8 +31,8 @@ export function Todos() {
           audience: authConfig.audience,
           scope: 'read:todos'
         })
-        const todos = await getTodos(accessToken)
-        setTodos(todos)
+        const todosData = await getTodos(accessToken)
+        setTodos(todosData)
         setLoadingTodos(false)
       } catch (e) {
         alert(`Failed to fetch todos: ${e.message}`)
@@ -58,8 +59,9 @@ export function Todos() {
       const todo = todos[pos]
       const accessToken = await getAccessTokenSilently({
         audience: authConfig.audience,
-        scope: 'write:todo'
+        scope: 'update:todos'       // ← use update:todos here
       })
+      // Send name + dueDate + flipped done
       await patchTodo(accessToken, todo.todoId, {
         name: todo.name,
         dueDate: todo.dueDate,
@@ -76,6 +78,7 @@ export function Todos() {
   }
 
   function onEditButtonClick(todoId) {
+    // Navigate to EditTodo page
     navigate(`/todos/${todoId}/edit`)
   }
 
@@ -146,9 +149,7 @@ export function Todos() {
   return (
     <div>
       <Header as="h1">TODOs</Header>
-
       <NewTodoInput onNewTodo={(newTodo) => setTodos([...todos, newTodo])} />
-
       {renderTodos()}
     </div>
   )

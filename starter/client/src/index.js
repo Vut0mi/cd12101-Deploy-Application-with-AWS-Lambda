@@ -15,7 +15,7 @@ ReactDOM.render(
     clientId={clientId}
     redirectUri={window.location.origin}
     audience={audience}
-    scope="openid profile email read:todo write:todo delete:todo"
+    scope="openid profile email read:todo update:todos write:todos delete:todo"
     cacheLocation="localstorage"
   >
     <App />

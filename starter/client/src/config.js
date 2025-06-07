@@ -1,6 +1,6 @@
 // src/config.js
 
-const apiId = 'si2ft4m3pd'
+const apiId = 'wmgy8quzaa'
 
 export const apiEndpoint = `https://${apiId}.execute-api.us-east-1.amazonaws.com/dev`
 

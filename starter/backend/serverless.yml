@@ -1,102 +1,26 @@
 service: serverless-todo-app
 
-frameworkVersion: '4'
+frameworkVersion: '^4.0.0'
+
+plugins:
+  - serverless-iam-roles-per-function
+
+custom:
+  stage: ${opt:stage, 'dev'}
 
 provider:
   name: aws
   runtime: nodejs18.x
+  stage: ${self:custom.stage}
   region: us-east-1
-  stage: dev
-  logs:
-    restApi: true
-    httpApi: true
+
   environment:
-    TODOS_TABLE: Todos # ✅ Fixed to match your actual table name
-    ATTACHMENT_S3_BUCKET: todo-attachments-${self:custom.accountId}-${self:provider.stage}
-    SIGNED_URL_EXPIRATION: 300
-  iam:
-    role:
-      statements:
-        - Effect: Allow
-          Action:
-            - dynamodb:Query
-            - dynamodb:PutItem
-            - dynamodb:UpdateItem
-            - dynamodb:DeleteItem
-          Resource:
-            - arn:aws:dynamodb:${aws:region}:*:table/Todos # ✅ Updated to match real table
-        - Effect: Allow
-          Action:
-            - s3:PutObject
-            - s3:GetObject
-            - s3:PutObjectAcl
-          Resource:
-            - arn:aws:s3:::todo-attachments-${AWS::AccountId}-${self:provider.stage}/*
+    TODOS_TABLE: todos-${self:custom.stage}
+    ATTACHMENT_S3_BUCKET: todo-attachments-dev
 
-functions:
-  Auth:
-    handler: src/auth/auth0Authorizer.handler
-
-  GetTodos:
-    handler: src/lambda/getTodos.handler
-    events:
-      - http:
-          method: get
-          path: todos
-          authorizer:
-            name: Auth
-            resultTtlInSeconds: 300
-          cors: true
-
-  CreateTodo:
-    handler: src/lambda/createTodo.handler
-    events:
-      - http:
-          method: post
-          path: todos
-          authorizer: Auth
-          cors: true
-
-  UpdateTodo:
-    handler: src/lambda/updateTodo.handler
-    events:
-      - http:
-          method: patch
-          path: todos/{todoId}
-          authorizer: Auth
-          cors: true
-
-  DeleteTodo:
-    handler: src/lambda/deleteTodo.handler
-    events:
-      - http:
-          method: delete
-          path: todos/{todoId}
-          authorizer: Auth
-          cors: true
-
-  GenerateUploadUrl:
-    handler: src/lambda/generateUploadUrl.handler
-    environment:
-      BUCKET_NAME: ${self:provider.environment.ATTACHMENT_S3_BUCKET}
-      URL_EXPIRATION: ${self:provider.environment.SIGNED_URL_EXPIRATION}
-    events:
-      - http:
-          method: post
-          path: todos/{todoId}/attachment
-          authorizer: Auth
-          cors: true
-
-plugins:
-  - serverless-plugin-existing-s3
-
-custom:
-  accountId: ${aws:accountId}
-  existingS3:
-    buckets:
-      - name: todo-attachments-${self:custom.accountId}-${self:provider.stage}
-        allowBucketPolicy: true
-        force: true
+  tracing:
+    lambda: true
+    apiGateway: true
 
 build:
   esbuild:
@@ -107,3 +31,120 @@ build:
     platform: node
     external:
       - aws-sdk
+
+resources:
+  Resources:
+    TodosTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.TODOS_TABLE}
+        AttributeDefinitions:
+          - AttributeName: partitionKey
+            AttributeType: S
+          - AttributeName: sortKey
+            AttributeType: S
+        KeySchema:
+          - AttributeName: partitionKey
+            KeyType: HASH
+          - AttributeName: sortKey
+            KeyType: RANGE
+        BillingMode: PAY_PER_REQUEST
+
+functions:
+  getTodos:
+    handler: src/lambda/getTodos.handler
+    tracing: Active
+    events:
+      - http:
+          path: todos
+          method: get
+          cors: true
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource:
+          - arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:provider.environment.TODOS_TABLE}
+
+  getTodo:
+    handler: src/lambda/getTodo.handler
+    tracing: Active
+    events:
+      - http:
+          path: todos/{todoId}
+          method: get
+          cors: true
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:Query
+        Resource:
+          - arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:provider.environment.TODOS_TABLE}
+
+  createTodo:
+    handler: src/lambda/createTodo.handler
+    tracing: Active
+    events:
+      - http:
+          path: todos
+          method: post
+          cors: true
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+        Resource:
+          - arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:provider.environment.TODOS_TABLE}
+
+  updateTodo:
+    handler: src/lambda/updateTodo.handler
+    tracing: Active
+    events:
+      - http:
+          path: todos/{todoId}
+          method: put
+          cors: true
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:UpdateItem
+        Resource:
+          - arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:provider.environment.TODOS_TABLE}
+
+  deleteTodo:
+    handler: src/lambda/deleteTodo.handler
+    tracing: Active
+    events:
+      - http:
+          path: todos/{todoId}
+          method: delete
+          cors: true
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:DeleteItem
+        Resource:
+          - arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:provider.environment.TODOS_TABLE}
+
+  generateUploadUrl:
+    handler: src/lambda/generateUploadUrl.handler
+    tracing: Active
+    events:
+      - http:
+          path: todos/{todoId}/attachment
+          method: post
+          cors: true
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:UpdateItem
+        Resource:
+          - arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:provider.environment.TODOS_TABLE}
+      - Effect: Allow
+        Action:
+          - s3:PutObject
+          - s3:GetObject
+          - s3:PutObjectAcl
+        Resource:
+          - arn:aws:s3:::${self:provider.environment.ATTACHMENT_S3_BUCKET}/*

@@ -26,6 +26,7 @@
     "jsonwebtoken": "^9.0.2",
     "middy": "^0.36.0",
     "serverless-iam-roles-per-function": "^3.2.0",
+    "sharp": "^0.34.2",
     "undici": "^7.10.0",
     "uuid": "^9.0.1",
     "winston": "^3.17.0"
