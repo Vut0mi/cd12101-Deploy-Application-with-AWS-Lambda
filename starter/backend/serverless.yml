@@ -52,6 +52,9 @@ resources:
         BillingMode: PAY_PER_REQUEST
 
 functions:
+  auth0Authorizer:
+    handler: src/auth/auth0Authorizer.handler
+
   getTodos:
     handler: src/lambda/getTodos.handler
     tracing: Active
@@ -179,7 +182,7 @@ functions:
     iamRoleStatements:
       - Effect: Allow
         Action:
-          - dynamodb:GetItem  # ✅ To verify existence
+          - dynamodb:GetItem
           - dynamodb:DeleteItem
         Resource:
           - arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:provider.environment.TODOS_TABLE}
@@ -190,7 +193,7 @@ functions:
     events:
       - http:
           path: todos/{todoId}/attachment
-          method: post
+          method: post 
           cors:
             origin: 'http://localhost:3000'
             headers:
@@ -203,10 +206,11 @@ functions:
               - POST
               - PATCH
               - DELETE
+          authorizer: auth0Authorizer
     iamRoleStatements:
       - Effect: Allow
         Action:
-          - dynamodb:GetItem  # ✅ Fixes AccessDenied for fetching todo
+          - dynamodb:GetItem
           - dynamodb:UpdateItem
         Resource:
           - arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:provider.environment.TODOS_TABLE}

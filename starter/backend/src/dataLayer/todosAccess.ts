@@ -81,7 +81,7 @@ export class TodosAccess {
       await docClient.send(command);
       return {
         ...todo,
-        todoId: todo.sortKey // normalize field name for frontend
+        todoId: todo.sortKey, // normalize field name for frontend
       };
     } catch (error) {
       console.error("Error creating todo:", error);
@@ -135,10 +135,12 @@ export class TodosAccess {
 
   async generateUploadUrl(todoId: string, userId: string, contentType: string): Promise<string> {
     try {
+      const key = `${userId}/${todoId}`; // Organize files by user
+
       const putCommand = new PutObjectCommand({
         Bucket: bucketName,
-        Key: todoId,
-        ContentType: contentType,  // Use the dynamic content type here
+        Key: key,
+        ContentType: contentType,
       });
 
       const url = await getSignedUrl(xrayWrappedS3Client, putCommand, {
@@ -153,7 +155,7 @@ export class TodosAccess {
         },
         UpdateExpression: "set attachmentUrl = :a",
         ExpressionAttributeValues: {
-          ":a": `https://${bucketName}.s3.amazonaws.com/${todoId}`,
+          ":a": `https://${bucketName}.s3.amazonaws.com/${key}`,
         },
       });
 
