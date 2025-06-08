@@ -8,7 +8,7 @@ export const LogIn = () => {
   const handleLogin = () => {
     loginWithRedirect({
       audience: 'https://todo-api.dev', // replace with your actual API audience
-      scope: 'read:todos write:todos delete:todo upload:file', // add all needed scopes
+      scope: 'read:todos write:todos delete:todo upload:file update:todos', // add all needed scopes
       prompt: 'consent' // forces the consent screen
     })
   }

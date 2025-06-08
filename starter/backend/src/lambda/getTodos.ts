@@ -8,31 +8,32 @@ import { getUserId } from "../utils";
 const baseHandler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
-  console.log("Processing getTodos event", event);
+  console.log("Processing getTodos event for request:", event);
 
   try {
     const userId = getUserId(event);
     const items = await getTodos(userId);
 
+    console.log(`Fetched ${items.length} todos for userId=${userId}`);
+
     return {
       statusCode: 200,
-      body: JSON.stringify({ items })
+      body: JSON.stringify({ items }),
     };
   } catch (error) {
-    console.error("Error fetching todos", error);
+    console.error("Error fetching todos:", error);
 
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: "Failed to fetch todos" })
+      body: JSON.stringify({ error: "Failed to fetch todos" }),
     };
   }
 };
 
-// Middy wrapper with CORS
 export const handler = middy(baseHandler).use(
   httpCors({
-    origin: '*', // or 'http://localhost:3000' for specific origin
-    credentials: true
+    origin: "*", // specify frontend URL if needed for better security
+    credentials: true,
   })
 );
 

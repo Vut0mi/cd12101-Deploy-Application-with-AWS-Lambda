@@ -1,7 +1,7 @@
 {
   "name": "serverless-todo-app",
   "version": "1.0.0",
-  "type": "module",
+  "type": "commonjs",
   "description": "Serverless TODO image app",
   "main": "handler.js",
   "scripts": {
@@ -11,10 +11,10 @@
   "author": "Ivan Mushketyk",
   "license": "ISC",
   "dependencies": {
-    "@aws-sdk/client-dynamodb": "^3.214.0",
-    "@aws-sdk/client-s3": "^3.213.0",
-    "@aws-sdk/lib-dynamodb": "^3.214.0",
-    "@aws-sdk/s3-request-presigner": "^3.213.0",
+    "@aws-sdk/client-dynamodb": "^3.826.0",
+    "@aws-sdk/client-s3": "^3.826.0",
+    "@aws-sdk/lib-dynamodb": "^3.826.0",
+    "@aws-sdk/s3-request-presigner": "^3.826.0",
     "@middy/core": "^3.6.2",
     "@middy/http-cors": "^3.6.2",
     "@middy/http-error-handler": "^3.6.2",

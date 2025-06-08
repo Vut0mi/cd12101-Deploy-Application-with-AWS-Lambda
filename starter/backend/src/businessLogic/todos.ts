@@ -10,7 +10,13 @@ const todosAccess = new TodosAccess()
  * Fetch all TODOs for a user.
  */
 export async function getTodos(userId: string) {
-  return todosAccess.getTodos(userId)
+  const items = await todosAccess.getTodos(userId)
+
+  // Normalize to include todoId for frontend compatibility
+  return items.map((item) => ({
+    ...item,
+    todoId: item.sortKey // rename sortKey to todoId for the frontend
+  }))
 }
 
 /**
@@ -22,7 +28,10 @@ export async function getTodo(todoId: string, userId: string) {
   if (!item) {
     throw new Error(`Todo ${todoId} not found for user ${userId}`)
   }
-  return item
+  return {
+    ...item,
+    todoId: item.sortKey // normalize for frontend
+  }
 }
 
 /**
@@ -35,15 +44,19 @@ export async function createTodo(
   const todoId = uuidv4()
 
   const newItem: TodoItem = {
-    partitionKey: userId,        // userId as the partition key
-    sortKey: todoId,             // todoId as the sort key
+    partitionKey: userId,
+    sortKey: todoId,
     createdAt: new Date().toISOString(),
     name: request.name,
     dueDate: request.dueDate,
     done: false
   }
 
-  return await todosAccess.createTodo(newItem)
+  const savedItem = await todosAccess.createTodo(newItem)
+  return {
+    ...savedItem,
+    todoId: savedItem.sortKey
+  }
 }
 
 /**
@@ -65,9 +78,26 @@ export async function deleteTodo(todoId: string, userId: string) {
 }
 
 /**
- * Generate a pre‐signed URL to upload an attachment, then update the TODO item’s attachmentUrl.
+ * Generate a pre-signed URL to upload an attachment.
+ * Takes contentType and updates the TODO's attachmentUrl.
  */
-export async function generateUploadUrl(todoId: string, userId: string) {
-  return await todosAccess.generateUploadUrl(todoId, userId)
+export async function generateUploadUrl(
+  todoId: string,
+  userId: string,
+  contentType: string
+): Promise<string> {
+  return await todosAccess.generateUploadUrl(todoId, userId, contentType)
+}
+
+/**
+ * Update a TODO's attachmentUrl directly.
+ * Used if you want to call this from a separate Lambda.
+ */
+export async function updateTodoAttachmentUrl(
+  todoId: string,
+  userId: string,
+  attachmentUrl: string
+) {
+  return await todosAccess.updateTodoAttachmentUrl(todoId, userId, attachmentUrl)
 }
 

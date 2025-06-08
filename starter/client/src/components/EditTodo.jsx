@@ -15,7 +15,7 @@ const UploadState = {
 export function EditTodo() {
   const { todoId } = useParams()
   const navigate = useNavigate()
-  const { getAccessTokenSilently, user: auth0User } = useAuth0()
+  const { getAccessTokenSilently } = useAuth0()
 
   const [name, setName] = useState('')
   const [dueDate, setDueDate] = useState('')
@@ -84,14 +84,18 @@ export function EditTodo() {
 
   async function handleUpload(event) {
     event.preventDefault()
+
     if (!todoId) {
       alert('Missing todo ID')
       return
     }
+
     if (!file) {
       alert('Please select a file first.')
       return
     }
+
+    console.log('Uploading for todoId:', todoId)
 
     setUploadState(UploadState.FetchingPresignedUrl)
     try {
@@ -100,9 +104,14 @@ export function EditTodo() {
         scope: 'write:todos'
       })
       const uploadUrl = await getUploadUrl(accessToken, todoId)
+      console.log('Received uploadUrl:', uploadUrl)
+
+      if (!uploadUrl || !uploadUrl.startsWith('https://')) {
+        throw new Error('Invalid upload URL received from backend')
+      }
 
       setUploadState(UploadState.UploadingFile)
-      await uploadFile(uploadUrl, file, auth0User.sub) 
+      await uploadFile(uploadUrl, file)
 
       alert('File was successfully uploaded! You can go back to the list to see it.')
     } catch (err) {
@@ -154,11 +163,7 @@ export function EditTodo() {
       <Form onSubmit={handleUpload}>
         <Form.Field>
           <label>Select File</label>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleFileChange}
-          />
+          <input type="file" accept="image/*" onChange={handleFileChange} />
         </Form.Field>
 
         {uploadState === UploadState.FetchingPresignedUrl && <p>Requesting upload URL…</p>}

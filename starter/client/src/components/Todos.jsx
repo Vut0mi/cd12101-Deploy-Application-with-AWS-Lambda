@@ -19,7 +19,7 @@ import { NewTodoInput } from './NewTodoInput'
 import { authConfig } from '../config'
 
 export function Todos() {
-  const { user, getAccessTokenSilently } = useAuth0()
+  const { getAccessTokenSilently } = useAuth0()
   const [todos, setTodos] = useState([])
   const [loadingTodos, setLoadingTodos] = useState(true)
   const navigate = useNavigate()
@@ -32,7 +32,14 @@ export function Todos() {
           scope: 'read:todos'
         })
         const todosData = await getTodos(accessToken)
-        setTodos(todosData)
+
+        // Normalize todoId field if missing or named differently
+        const normalizedTodos = todosData.map(todo => ({
+          ...todo,
+          todoId: todo.todoId || todo.id || todo.todoID
+        }))
+
+        setTodos(normalizedTodos)
         setLoadingTodos(false)
       } catch (e) {
         alert(`Failed to fetch todos: ${e.message}`)
@@ -43,14 +50,22 @@ export function Todos() {
 
   async function onTodoDelete(todoId) {
     try {
+      console.log('Deleting todoId:', todoId)
       const accessToken = await getAccessTokenSilently({
         audience: authConfig.audience,
         scope: 'delete:todo'
       })
       await deleteTodo(accessToken, todoId)
-      setTodos(todos.filter((todo) => todo.todoId !== todoId))
+
+      // Refetch todos after deletion
+      const todosData = await getTodos(accessToken)
+      const normalizedTodos = todosData.map(todo => ({
+        ...todo,
+        todoId: todo.todoId || todo.id || todo.todoID
+      }))
+      setTodos(normalizedTodos)
     } catch (e) {
-      alert('Todo deletion failed')
+      alert(`Todo deletion failed: ${e.message}`)
     }
   }
 
@@ -59,9 +74,8 @@ export function Todos() {
       const todo = todos[pos]
       const accessToken = await getAccessTokenSilently({
         audience: authConfig.audience,
-        scope: 'update:todos'       // ← use update:todos here
+        scope: 'update:todos'
       })
-      // Send name + dueDate + flipped done
       await patchTodo(accessToken, todo.todoId, {
         name: todo.name,
         dueDate: todo.dueDate,
@@ -73,13 +87,18 @@ export function Todos() {
         })
       )
     } catch (e) {
-      alert('Todo update failed')
+      alert(`Todo update failed: ${e.message}`)
     }
   }
 
-  function onEditButtonClick(todoId) {
-    // Navigate to EditTodo page
-    navigate(`/todos/${todoId}/edit`)
+  function onEditButtonClick(todoId, todo) {
+    const idToUse = todoId || todo.id || todo.todoID
+    if (!idToUse) {
+      alert("Cannot edit: todoId is missing")
+      console.error("Missing todoId for todo:", todo)
+      return
+    }
+    navigate(`/todos/${idToUse}/edit`)
   }
 
   function renderLoading() {
@@ -96,25 +115,18 @@ export function Todos() {
     return (
       <Grid padded>
         {todos.map((todo, pos) => (
-          <Grid.Row key={todo.todoId}>
+          <Grid.Row key={todo.todoId || pos}>
             <Grid.Column width={1} verticalAlign="middle">
-              <Checkbox
-                onChange={() => onTodoCheck(pos)}
-                checked={todo.done}
-              />
+              <Checkbox onChange={() => onTodoCheck(pos)} checked={todo.done} />
             </Grid.Column>
             <Grid.Column width={10} verticalAlign="middle">
               {todo.name}
             </Grid.Column>
             <Grid.Column width={3} floated="right">
-              {todo.dueDate}
+              {new Date(todo.dueDate).toLocaleDateString()}
             </Grid.Column>
             <Grid.Column width={1} floated="right">
-              <Button
-                icon
-                color="blue"
-                onClick={() => onEditButtonClick(todo.todoId)}
-              >
+              <Button icon color="blue" onClick={() => onEditButtonClick(todo.todoId, todo)}>
                 <Icon name="pencil" />
               </Button>
             </Grid.Column>
@@ -122,13 +134,18 @@ export function Todos() {
               <Button
                 icon
                 color="red"
-                onClick={() => onTodoDelete(todo.todoId)}
+                onClick={() => {
+                  console.log('Delete button clicked for todoId:', todo.todoId)
+                  onTodoDelete(todo.todoId)
+                }}
               >
                 <Icon name="delete" />
               </Button>
             </Grid.Column>
             {todo.attachmentUrl && (
-              <Image src={todo.attachmentUrl} size="small" wrapped />
+              <Grid.Column width={16}>
+                <Image src={todo.attachmentUrl} size="small" wrapped />
+              </Grid.Column>
             )}
             <Grid.Column width={16}>
               <Divider />

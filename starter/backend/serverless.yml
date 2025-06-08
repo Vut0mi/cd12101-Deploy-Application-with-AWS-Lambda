@@ -28,6 +28,7 @@ build:
     minify: false
     sourcemap: true
     target: node18
+    format: cjs
     platform: node
     external:
       - aws-sdk
@@ -58,7 +59,18 @@ functions:
       - http:
           path: todos
           method: get
-          cors: true
+          cors:
+            origin: 'http://localhost:3000'
+            headers:
+              - Content-Type
+              - Authorization
+            allowCredentials: true
+            methods:
+              - OPTIONS
+              - GET
+              - POST
+              - PATCH
+              - DELETE
     iamRoleStatements:
       - Effect: Allow
         Action:
@@ -73,7 +85,18 @@ functions:
       - http:
           path: todos/{todoId}
           method: get
-          cors: true
+          cors:
+            origin: 'http://localhost:3000'
+            headers:
+              - Content-Type
+              - Authorization
+            allowCredentials: true
+            methods:
+              - OPTIONS
+              - GET
+              - POST
+              - PATCH
+              - DELETE
     iamRoleStatements:
       - Effect: Allow
         Action:
@@ -89,7 +112,18 @@ functions:
       - http:
           path: todos
           method: post
-          cors: true
+          cors:
+            origin: 'http://localhost:3000'
+            headers:
+              - Content-Type
+              - Authorization
+            allowCredentials: true
+            methods:
+              - OPTIONS
+              - GET
+              - POST
+              - PATCH
+              - DELETE
     iamRoleStatements:
       - Effect: Allow
         Action:
@@ -103,8 +137,19 @@ functions:
     events:
       - http:
           path: todos/{todoId}
-          method: put
-          cors: true
+          method: patch
+          cors:
+            origin: 'http://localhost:3000'
+            headers:
+              - Content-Type
+              - Authorization
+            allowCredentials: true
+            methods:
+              - OPTIONS
+              - GET
+              - POST
+              - PATCH
+              - DELETE
     iamRoleStatements:
       - Effect: Allow
         Action:
@@ -119,10 +164,22 @@ functions:
       - http:
           path: todos/{todoId}
           method: delete
-          cors: true
+          cors:
+            origin: 'http://localhost:3000'
+            headers:
+              - Content-Type
+              - Authorization
+            allowCredentials: true
+            methods:
+              - OPTIONS
+              - GET
+              - POST
+              - PATCH
+              - DELETE
     iamRoleStatements:
       - Effect: Allow
         Action:
+          - dynamodb:GetItem  # ✅ To verify existence
           - dynamodb:DeleteItem
         Resource:
           - arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:provider.environment.TODOS_TABLE}
@@ -134,10 +191,22 @@ functions:
       - http:
           path: todos/{todoId}/attachment
           method: post
-          cors: true
+          cors:
+            origin: 'http://localhost:3000'
+            headers:
+              - Content-Type
+              - Authorization
+            allowCredentials: true
+            methods:
+              - OPTIONS
+              - GET
+              - POST
+              - PATCH
+              - DELETE
     iamRoleStatements:
       - Effect: Allow
         Action:
+          - dynamodb:GetItem  # ✅ Fixes AccessDenied for fetching todo
           - dynamodb:UpdateItem
         Resource:
           - arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:provider.environment.TODOS_TABLE}

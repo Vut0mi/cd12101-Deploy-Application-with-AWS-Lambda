@@ -10,30 +10,50 @@ const baseHandler = async (
 ): Promise<APIGatewayProxyResult> => {
   console.log("Processing updateTodo event", event);
 
+  // Extract todoId from path parameters
   const todoId = event.pathParameters?.todoId;
   if (!todoId) {
     return {
       statusCode: 400,
-      body: JSON.stringify({ error: "Missing todoId in path" })
+      body: JSON.stringify({ error: "Missing todoId in path" }),
     };
   }
 
-  const updatedTodo = JSON.parse(event.body || "{}");
+  // Parse update data from request body
+  let updateRequest;
+  try {
+    updateRequest = JSON.parse(event.body || "{}");
+  } catch (err) {
+    console.error("Invalid JSON in request body", err);
+    return {
+      statusCode: 400,
+      body: JSON.stringify({ error: "Invalid JSON in request body" }),
+    };
+  }
+
+  // Get userId from the authorizer context
   const userId = getUserId(event);
 
-  await updateTodo(todoId, updatedTodo, userId);
-
-  return {
-    statusCode: 204,
-    body: ""
-  };
+  try {
+    await updateTodo(todoId, updateRequest, userId);
+    // 204 No Content: successful update with no response body
+    return {
+      statusCode: 204,
+      body: "",
+    };
+  } catch (err) {
+    console.error("Update todo error", err);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: "Could not update todo" }),
+    };
+  }
 };
 
-// Export with CORS enabled
 export const handler = middy(baseHandler).use(
   httpCors({
-    origin: '*',
-    credentials: true
+    origin: "*",
+    credentials: true,
   })
 );
 

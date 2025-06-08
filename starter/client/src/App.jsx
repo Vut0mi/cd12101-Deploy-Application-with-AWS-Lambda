@@ -9,6 +9,12 @@ import { NotFound } from './components/NotFound'
 import { Todos } from './components/Todos'
 
 export default function App() {
+  const { isAuthenticated, isLoading, loginWithRedirect, logout } = useAuth0()
+
+  if (isLoading) {
+    return <div>Loading...</div>
+  }
+
   function generateMenu() {
     return (
       <Menu>
@@ -37,24 +43,19 @@ export default function App() {
     }
   }
 
-  const { isAuthenticated, isLoading, loginWithRedirect, logout } = useAuth0()
-
   return (
-    <div>
+    <BrowserRouter>
       <Segment style={{ padding: '8em 0em' }} vertical>
         <Grid container stackable verticalAlign="middle">
           <Grid.Row>
             <Grid.Column width={16}>
-              <BrowserRouter>
-                {generateMenu()}
-
-                {generateCurrentPage(isAuthenticated)}
-              </BrowserRouter>
+              {generateMenu()}
+              {generateCurrentPage(isAuthenticated)}
             </Grid.Column>
           </Grid.Row>
         </Grid>
       </Segment>
-    </div>
+    </BrowserRouter>
   )
 }
 
@@ -65,11 +66,10 @@ function generateCurrentPage(isAuthenticated) {
 
   return (
     <Routes>
-      <Route path="/" exact element={<Todos />} />
-
-      <Route path="/todos/:todoId/edit" exact element={<EditTodo />} />
-
+      <Route path="/" element={<Todos />} />
+      <Route path="/todos/:todoId/edit" element={<EditTodo />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   )
 }
+
