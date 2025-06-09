@@ -16,7 +16,7 @@ provider:
 
   environment:
     TODOS_TABLE: todos-${self:custom.stage}
-    ATTACHMENT_S3_BUCKET: todo-attachments-dev
+    ATTACHMENT_S3_BUCKET: udagram-images-dev
 
   tracing:
     lambda: true

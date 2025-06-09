@@ -103,7 +103,8 @@ export function EditTodo() {
         audience: authConfig.audience,
         scope: 'write:todos'
       })
-      const uploadUrl = await getUploadUrl(accessToken, todoId)
+      // ✅ Pass file.type as contentType
+      const uploadUrl = await getUploadUrl(accessToken, todoId, file.type)
       console.log('Received uploadUrl:', uploadUrl)
 
       if (!uploadUrl || !uploadUrl.startsWith('https://')) {
